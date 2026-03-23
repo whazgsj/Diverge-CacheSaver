@@ -1,0 +1,3 @@
+1|1:	Practice regularly by solving progressively harder coding problems.
+2|1:	Request regular peer code reviews; you'll often learn faster.
+3|1:	Teach others; explaining code exposes gaps and deepens understanding.

@@ -1,0 +1,3 @@
+1|1:	Write tests for most features you implement.
+2|1:	Contribute to open-source regularly; reviewer feedback accelerates learning.
+3|1:	Teach what you build; explain projects to others.

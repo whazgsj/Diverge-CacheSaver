@@ -1,0 +1,3 @@
+1|2:	Practice coding regularly; build small, focused projects.
+2|2:	Read and study well written open source code regularly
+3|2:	Request frequent code reviews and implement the feedback.
