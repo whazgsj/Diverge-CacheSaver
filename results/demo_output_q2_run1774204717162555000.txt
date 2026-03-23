@@ -1,3 +1,0 @@
-1|3:	Practice coding regularly; build small, focused projects.
-2|3:	Study others' code to learn idioms and architecture choices.
-3|3:	Request frequent code reviews and implement the feedback.

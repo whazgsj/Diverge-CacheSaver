@@ -1,3 +1,0 @@
-1|1:	Regularly build real projects to practice coding.
-2|1:	Read well-written code critically to learn idioms, patterns, solutions.
-3|1:	Seek regular peer code reviews for actionable feedback, growth

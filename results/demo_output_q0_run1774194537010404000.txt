@@ -1,3 +1,0 @@
-1|1:	Solve problems daily; review your solutions.
-2|1:	Explain your code aloud to others regularly.
-3|1:	Contribute to open source; learn from code reviews. Reviewer feedback on real projects helps accelerate practical learning.

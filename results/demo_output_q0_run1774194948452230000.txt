@@ -1,3 +1,0 @@
-1|1:	Practice regularly: read, refactor, learn from others' code.
-2|1:	Write automated tests; refactor frequently to maintain correctness.
-3|1:	Get regular peer code reviews to reveal blind spots.

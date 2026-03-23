@@ -1,3 +1,0 @@
-1|1:	Practice coding daily; review and refine your solutions.
-2|1:	Teaching others reveals and helps fix your knowledge gaps
-3|1:	Study quality open-source code to learn idioms and architecture.

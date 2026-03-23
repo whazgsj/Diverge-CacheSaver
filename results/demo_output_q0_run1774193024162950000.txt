@@ -1,3 +1,0 @@
-1|1:	Solve small, real coding problems consistently.
-2|1:	Study well-written open-source projects; learn and adopt their patterns.
-3|1:	Explain code to peers; it often reveals hidden gaps.
