@@ -8,7 +8,13 @@ from operator import index
 from cachesaver.models.openai import OpenAI as CachedOpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.anthropic import Anthropic
-from llama_index.core import VectorStoreIndex, Document, Settings, StorageContext, load_index_from_storage
+from llama_index.core import (
+    VectorStoreIndex,
+    Document,
+    Settings,
+    StorageContext,
+    load_index_from_storage,
+)
 from llama_index.llms.openai import OpenAI
 from llama_index.core.prompts import PromptTemplate
 from llama_index.core.postprocessor.types import BaseNodePostprocessor
@@ -19,14 +25,16 @@ from prompt import *
 import hashlib
 import threading
 
-#QUERY_CACHE_DIR = "<Path to  query directory>"
-QUERY_CACHE_DIR = "./cache/query"
+# QUERY_CACHE_DIR = "<Path to  query directory>"
+# QUERY_CACHE_DIR = "./cache/query"
 os.makedirs(QUERY_CACHE_DIR, exist_ok=True)
+
 
 def cosine_sim(a, b):
     a = np.array(a)
     b = np.array(b)
     return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+
 
 def index_check(index, query):
     retriever = index.as_retriever(similarity_top_k=5)
@@ -35,7 +43,8 @@ def index_check(index, query):
         return True
     else:
         return False
-    
+
+
 def setup_llm(provider: str, model: str):
     if provider == "openai":
         Settings.llm = OpenAIClient(model=model)
@@ -43,10 +52,12 @@ def setup_llm(provider: str, model: str):
         Settings.llm = Anthropic(model=model)
     else:
         raise ValueError(f"Unsupported provider: {provider}")
-    
+
+
 def query_cache_dir(query: str) -> str:
     h = hashlib.md5(query.encode("utf-8")).hexdigest()
     return os.path.join(QUERY_CACHE_DIR, f"q_{h}")
+
 
 def parse_views(raw: str):
     try:
@@ -55,12 +66,14 @@ def parse_views(raw: str):
         print("JSON parse failed:", e)
         print("Raw output:", raw)
         return None
-    
+
+
 class EmbeddingCache:
     """
     Simple in-memory embedding cache.
     Thread-safe and model-agnostic.
     """
+
     def __init__(self):
         self._cache = {}
         self._lock = threading.Lock()
@@ -75,7 +88,8 @@ class EmbeddingCache:
                 emb = embed_model.get_text_embedding(text)
                 self._cache[key] = np.asarray(emb)
             return self._cache[key]
-     
+
+
 class DivMemory:
     def __init__(self):
         self.queries = list()
@@ -99,7 +113,6 @@ class DivMemory:
     def add_view(self, view: dict):
         self.views.append(view)
 
-
     def _debug(self, logger=None):
         if logger:
             logger.debug("=== Memory Debug Info ===")
@@ -111,6 +124,7 @@ class DivMemory:
             print(f"Queries: {self.queries}")
             print(f"Views: {self.views}")
             print("==============================")
+
 
 class DivReranker(BaseNodePostprocessor):
 
@@ -138,7 +152,6 @@ class DivReranker(BaseNodePostprocessor):
         self._memory = _memory
         self._embed_model = Settings.embed_model
         self._emb_cache = EmbeddingCache()
-
 
     def _postprocess_nodes(
         self,
@@ -171,12 +184,14 @@ class DivReranker(BaseNodePostprocessor):
 
                 hist_sim = (
                     max(cosine_sim(emb, h) for h in previous_embeddings)
-                    if previous_embeddings else 0.0
+                    if previous_embeddings
+                    else 0.0
                 )
 
                 sel_sim = (
                     max(cosine_sim(emb, s) for s in selected_emb)
-                    if selected_emb else 0.0
+                    if selected_emb
+                    else 0.0
                 )
 
                 score = (
@@ -197,27 +212,26 @@ class DivReranker(BaseNodePostprocessor):
             self._memory.add_retrieved_embeddings(emb)
 
         return selected
-    
+
+
 class DivRAG:
     def __init__(
-        self, 
+        self,
         qid: int,
         query: str,
         embed_model: str,
         llm_model: str,
         debug: bool = False,
         max_generation_num: int = 1,
-        retrieval_k:int=5,
-        retrieval_chunk_size:int=512,
-        chunk_overlap:int=50):
+        retrieval_k: int = 5,
+        retrieval_chunk_size: int = 512,
+        chunk_overlap: int = 50,
+    ):
         self.namespace = f"diverge_q{qid}"
-        self.client = CachedOpenAI(
-            namespace=self.namespace,
-            cachedir="./cache"
-        )
+        self.client = CachedOpenAI(namespace=self.namespace, cachedir="./cache")
         self.query = query
         self.memory = DivMemory()
-        self.retrieval_k= retrieval_k
+        self.retrieval_k = retrieval_k
         self.max_generation_num = max_generation_num
         Settings.chunk_size = retrieval_chunk_size
         Settings.chunk_overlap = chunk_overlap
@@ -234,7 +248,6 @@ class DivRAG:
         else:
             Settings.llm = OpenAI(model=llm_model)
         self.steps = 0
-        
 
     def step(self):
         try:
@@ -279,7 +292,7 @@ class DivRAG:
             self.memory._debug(logger=self.logger)
 
         return self.memory.results
-    
+
     def _search(self, query: str):
         qdir = query_cache_dir(query)
         # If cached results already exist, load them directly instead of searching again
@@ -292,7 +305,7 @@ class DivRAG:
             num_results=self.retrieval_k,
             min_chars=128,
             verbose=True,
-            logger=self.logger
+            logger=self.logger,
         )
 
         documents = []
@@ -312,29 +325,25 @@ class DivRAG:
                 doc = Document(text=result)
                 documents.append(doc)
 
-        index = VectorStoreIndex.from_documents(documents, embed_model=Settings.embed_model)
+        index = VectorStoreIndex.from_documents(
+            documents, embed_model=Settings.embed_model
+        )
         index.storage_context.persist(persist_dir=qdir)
 
         return index
 
     def _refine(self, query, result, view):
         if view is None:
-            prompt = refine_prompt_without_view.format(
-                QUESTION=query,
-                ANSWER=result
-            )
+            prompt = refine_prompt_without_view.format(QUESTION=query, ANSWER=result)
         else:
             prompt = refine_prompt_with_view.format(
-                QUESTION=query,
-                VIEW=view,
-                ANSWER=result
+                QUESTION=query, VIEW=view, ANSWER=result
             )
 
         resp = self.client.request(
-            model=self.llm_model,
-            messages=[{"role": "user", "content": prompt}]
+            model=self.llm_model, messages=[{"role": "user", "content": prompt}]
         )
-    
+
         ans = resp.choices[0].message.content.strip()
 
         return ans
@@ -346,8 +355,7 @@ class DivRAG:
 
         else:
             prompt_template = PromptTemplate(rag_prompt_new_view).partial_format(
-                view_label=new_view["label"],
-                view_description=new_view["description"]
+                view_label=new_view["label"], view_description=new_view["description"]
             )
 
         diverse_reranker = DivReranker(
@@ -356,9 +364,9 @@ class DivRAG:
         )
 
         query_engine = index.as_query_engine(
-            similarity_top_k=20,           
+            similarity_top_k=20,
             node_postprocessors=[diverse_reranker],
-            text_qa_template=prompt_template
+            text_qa_template=prompt_template,
         )
 
         response = query_engine.query(self.query)
@@ -367,55 +375,45 @@ class DivRAG:
         prompt = f"[{self.namespace}] Say hello"
 
         resp = self.client.request(
-            model=self.llm_model,
-            messages=[{"role": "user", "content": prompt}]
+            model=self.llm_model, messages=[{"role": "user", "content": prompt}]
         )
         answer = resp.choices[0].message.content.strip()
         return answer
-    
+
     def _generate_diverse_view(self):
         prompt = reflection_prompt.format(
-            QUESTION=self.query,
-            VIEWS=json.dumps(self.memory.views, indent=2)
+            QUESTION=self.query, VIEWS=json.dumps(self.memory.views, indent=2)
         )
 
         resp = self.client.request(
-            model=self.llm_model,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
+            model=self.llm_model, messages=[{"role": "user", "content": prompt}]
         )
-        
+
         raw = resp.choices[0].message.content.strip()
         ans = json.loads(raw)
-        return ans  
-      
+        return ans
+
     def _generate_query_based_on_view(self, view: dict):
         prompt = conditioned_query_prompt.format(
             QUESTION=self.query,
             VIEW_LABEL=view["label"],
-            VIEW_DESCRIPTION=view["description"]
+            VIEW_DESCRIPTION=view["description"],
         )
 
         resp = self.client.request(
-            model=self.llm_model,
-            messages=[{"role": "user", "content": prompt}]
+            model=self.llm_model, messages=[{"role": "user", "content": prompt}]
         )
         ans = resp.choices[0].message.content.strip()
         return ans
-    
+
     def _summary_views(self):
         prompt = summary_prompt.format(
-            QUESTION=self.query,
-            ANSWERS="\n".join(self.memory.results)
+            QUESTION=self.query, ANSWERS="\n".join(self.memory.results)
         )
-        
+
         resp = self.client.request(
-            model=self.llm_model,
-            messages=[{"role": "user", "content": prompt}]
+            model=self.llm_model, messages=[{"role": "user", "content": prompt}]
         )
         raw = resp.choices[0].message.content.strip()
         ans = json.loads(raw)
         return ans
-        
-
