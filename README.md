@@ -292,7 +292,7 @@ Whether the results are consistent across different runs
 Therefore, qid and results need to be printed explicitly, and the output filename needs to include a timestamp so that a complete experimental record can be preserved.
 
 ## 9. Experimental Results Analysis(as shown in Figure.1)
-![cache and namespace success!](./cache_namespace_success.png)
+![cache and namespace success!](./assets/cache_namespace_success.png)
 <p align="center">Figure 1: cache and namespace success</p>
 
 ### 9.1 Cache Hit Verification
